@@ -75,10 +75,17 @@ int main(int argc, char* argv[]){
 		usage(argv[0], "send ", gai_strerror(send));
 	}
 
-	// //receive a 
-	// char * mess_in;
-	// struct addrinfo *cli_info; 
-	// int recv = recvfrom(serv_sock, mess_in, mess_len, )
+	//receive a message from server  
+	char * mess_in;
+	struct addrinfo *cli_info; 
+	int recv;
+	socklen_t rcv_len;
+	for (int i=0; i<=RETRY; i++){ //retry 3 times 
+		recv = recvfrom(serv_sock, mess_in, mess_len, 0, (struct sockaddr*) &cli_info, &rcv_len);
+		if (!(recv < 0)){
+			break;
+		}
+	}
 
 	return 0;
 }
