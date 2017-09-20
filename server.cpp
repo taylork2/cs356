@@ -24,8 +24,6 @@ int main(int argc, char* argv[]){
 	char* port = argv[2];
 	int mess_len = atoi(argv[3]);
 
-	cout << mess_len << endl;
-
 	char * message = new char[mess_len];
 
 	int status, serv_sock, conn, serv_bind;
@@ -36,7 +34,7 @@ int main(int argc, char* argv[]){
 	hints.ai_family = AF_INET; //IPv4
 	hints.ai_socktype = SOCK_DGRAM; //UDP
 
-	status = getaddrinfo(add, port, &hints, &servinfo); //fill servinfo 
+	status = getaddrinfo(NULL, port, &hints, &servinfo); //fill servinfo 
 	if (status != 0){
 		usage(argv[0], gai_strerror(status));
 	} 
@@ -59,6 +57,8 @@ int main(int argc, char* argv[]){
 		usage(argv[0], gai_strerror(conn));
 	}
 
+	//send packets
+	int 
 
 
 
