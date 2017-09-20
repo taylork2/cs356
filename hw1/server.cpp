@@ -10,13 +10,13 @@
 
 using namespace std;
 
-void usage(char *progname, string message){
-	cerr << "Error: " << progname << message << endl;
+void usage(char *progname, const char *message){
+	cerr << "Error: " << progname << " " << message << endl;
 }
 int main(int argc, char* argv[]){
 
 	if (argc != 4){
-		usage(argv[0], "Incorrect number of arguments.");
+		usage(argv[0], " Incorrect number of arguments.");
 		return 1;
 	}
 
@@ -24,24 +24,9 @@ int main(int argc, char* argv[]){
 	char* port = argv[2];
 	int mess_len = atoi(argv[3]);
 
-	cout << mess_len << endl;
-
 	char * message = new char[mess_len];
 
-	// struct sockaddr_in serv_addr, cli_addr;
-
-	// serv_addr.sin_family = AF_INET;
-	// serv_addr.sin_port = htons(port);
-
-	// int client_sock = socket(AF_INET, SOCK_DGRAM, 0);
-
-	// int error = bind(client_sock, (struct sockaddr_in *) serv_addr, sizeof(serv_addr));
-
-	// if (error < 0){
-	// 	usage(argv[0], "Problem binding.");
-	// }
-
-	int status, serv_sock;
+	int status, serv_sock, conn, serv_bind;
 	struct addrinfo hints, *servinfo;
 
 	memset(&hints, 0, sizeof hints); //empty struct 
@@ -49,13 +34,32 @@ int main(int argc, char* argv[]){
 	hints.ai_family = AF_INET; //IPv4
 	hints.ai_socktype = SOCK_DGRAM; //UDP
 
-	status = getaddrinfo(add, port, &hints, &servinfo); //fill servinfo 
+	status = getaddrinfo(NULL, port, &hints, &servinfo); //fill servinfo 
 	if (status != 0){
-		usage(argv[0], "getaddrinfo issue.");
+		usage(argv[0], gai_strerror(status));
 	} 
 
-	//create the socket 
+	//get the socket file descriptor
 	serv_sock = socket(servinfo->ai_family, servinfo->ai_socktype, servinfo->ai_protocol);
+	if (serv_sock < 0){
+		usage(argv[0], gai_strerror(serv_sock));
+	}
+
+	//bind to the port 
+	serv_bind = bind(serv_sock, servinfo->ai_addr, servinfo->ai_addrlen);
+	if (serv_bind != 0){
+		usage(argv[0], gai_strerror(serv_bind));
+	}
+
+	//connect to the socket 
+	conn = connect(serv_sock, servinfo->ai_addr, servinfo->ai_addrlen); 
+	if (conn != 0){
+		usage(argv[0], gai_strerror(conn));
+	}
+
+	//send packets
+	int 
+
 
 
 	return 0;
