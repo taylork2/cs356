@@ -16,10 +16,12 @@ using namespace std;
 
 
 // get sockaddr
-void *get_in_addr(struct sockaddr *sa)
-{
-    return &(((struct sockaddr_in*)sa)->sin_addr);
-}
+// char * get_in_addr(struct sockaddr *sa){
+// 	char ipstr[INET6_ADDRSTRLEN];
+// 	struct sockaddr_in *s = (struct sockaddr_in*) &sa;
+//     inet_ntop(AF_INET, &s->sin_addr, ipstr, sizeof ipstr);
+//     return ipstr;
+// }
 //error printing
 void usage(char *progname, string process, const char *message){
 	cerr << "Error: " << progname << " " << process << message << endl;
@@ -74,8 +76,7 @@ int main(int argc, char* argv[]){
 		usage(argv[0], "setsockopt ", strerror(errno));
 	}
 
-	//send a message to the server
-	struct sockaddr_storage *dest; 
+	// send a message to the server
 	int send = sendto(cli_sock, message, sizeof(message), 0, cli_info->ai_addr, cli_info->ai_addrlen);
 	if (send < 0){
 		usage(argv[0], "send ", strerror(errno));
@@ -85,15 +86,19 @@ int main(int argc, char* argv[]){
 
 	//receive a message from server  
 	char * mess_in;
-	struct addrinfo *serv_info; //info 
+	struct addrinfo_storage *serv_info; //info 
 	int recv;
 	socklen_t rcv_len = sizeof(cli_info);
 	char serv_addr[INET6_ADDRSTRLEN];
 	for (int i=0; i<=RETRY; i++){ //retry 3 times 
 		recv = recvfrom(cli_sock, mess_in, mess_len, 0, (struct sockaddr*) &serv_info, &rcv_len);
 		if (recv >= 0){
-			// getpeername(cli_sock, serv_info, ) 
-			cout << "Message received " << " " << mess_in << endl;
+			getpeername(cli_sock, (struct sockaddr*)serv_info, &rcv_len); 
+			struct sockaddr_in *s = (struct sockaddr_in *)&serv_info;
+    		int port = ntohs(s->sin_port);
+		    inet_ntop(AF_INET, &s->sin_addr, serv_addr, sizeof serv_addr);
+			// serv_addr = get_in_addr((struct sockaddr*) serv_info);
+			cout << "Message received " << serv_addr << endl;
 			return 0;
 		}
 	}
