@@ -14,9 +14,17 @@ using namespace std;
 #define TIMEOUT_SEC 1
 #define RETRY 3
 
+
+// get sockaddr
+void *get_in_addr(struct sockaddr *sa)
+{
+    return &(((struct sockaddr_in*)sa)->sin_addr);
+}
+//error printing
 void usage(char *progname, string process, const char *message){
 	cerr << "Error: " << progname << " " << process << message << endl;
 }
+
 int main(int argc, char* argv[]){
 
 	if (argc != 4){
@@ -80,10 +88,12 @@ int main(int argc, char* argv[]){
 	struct addrinfo *serv_info; //info 
 	int recv;
 	socklen_t rcv_len = sizeof(cli_info);
+	char serv_addr[INET6_ADDRSTRLEN];
 	for (int i=0; i<=RETRY; i++){ //retry 3 times 
 		recv = recvfrom(cli_sock, mess_in, mess_len, 0, (struct sockaddr*) &serv_info, &rcv_len);
-		if (!(recv < 0)){
-			cout << "Message received " << serv_info->addr << " " << mess_in << endl;
+		if (recv >= 0){
+			// getpeername(cli_sock, serv_info, ) 
+			cout << "Message received " << " " << mess_in << endl;
 			return 0;
 		}
 	}

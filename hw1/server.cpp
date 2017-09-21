@@ -24,7 +24,7 @@ int main(int argc, char* argv[]){
 		return 1;
 	}
 
-	char* add = argv[1];
+	// char* add = argv[1];
 	char* port = argv[2];
 	int mess_len = atoi(argv[3]);
 
@@ -37,9 +37,9 @@ int main(int argc, char* argv[]){
 
 	hints.ai_family = AF_INET; //IPv4
 	hints.ai_socktype = SOCK_DGRAM; //UDP
-	// hints.ai_flags = AI_PASSIVE;
+	hints.ai_flags = AI_PASSIVE; //set the IP address to my own
 
-	status = getaddrinfo(add, port, &hints, &serv_info); //fill serv_info 
+	status = getaddrinfo(NULL, port, &hints, &serv_info); //fill serv_info 
 	if (status != 0){
 		usage(argv[0], "getaddrinfo ", gai_strerror(errno));
 		return 1;
