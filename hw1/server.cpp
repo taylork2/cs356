@@ -77,17 +77,17 @@ int main(int argc, char* argv[]){
 
 	//receive a message from server  
 	char * mess_in;
-	struct addrinfo *cli_info; //info 
+	struct addrinfo *XXXXXXXX; //info 
 	int recv;
 	socklen_t rcv_len;
-	recv = recvfrom(serv_sock, mess_in, mess_len, 0, (struct sockaddr*) &cli_info, &rcv_len);
+	recv = recvfrom(serv_sock, mess_in, mess_len, 0, (struct sockaddr*) &XXXXXXXX, &rcv_len);
 	if (!(recv < 0)){
 		usage(argv[0], "recvfrom ", strerror(errno));
 		return 1;
 	} else {
 		//send a message to the server
 		struct sockaddr_storage *dest; 
-		int send = sendto(serv_sock, message, mess_len, 0, (struct sockaddr*) &serv_sock, sizeof(serv_sock));
+		int send = sendto(serv_sock, message, mess_len, 0, serv_info->ai_addr, serv_info->ai_addrlen);
 		if (send != 0){
 			usage(argv[0], "sendto ", strerror(errno));
 			return 1;

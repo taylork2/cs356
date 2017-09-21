@@ -28,30 +28,32 @@ int main(int argc, char* argv[]){
 	char* port = argv[2];
 	int mess_len = atoi(argv[3]);
 
-	char * message = new char[mess_len];
+	char message[mess_len];
+	memset(&message, 0 , sizeof(message));
 
-	int status, serv_sock, conn, serv_bind;
-	struct addrinfo hints, *serv_info;
+	int cli_sock, conn, cli_bind;
+	struct addrinfo hints, *cli_info;
 
 	memset(&hints, 0, sizeof hints); //empty struct 
 
 	hints.ai_family = AF_INET; //IPv4
 	hints.ai_socktype = SOCK_DGRAM; //UDP
 
-	status = getaddrinfo(NULL, port, &hints, &serv_info); //fill serv_info 
+	//store address information in cli_info
+	int status = getaddrinfo(add, port, &hints, &cli_info); //fill cli_info 
 	if (status != 0){
 		usage(argv[0], "getaddrinfo ", gai_strerror(status));
 	} 
 
 	//get the socket file descriptor
-	serv_sock = socket(serv_info->ai_family, serv_info->ai_socktype, serv_info->ai_protocol);
-	if (serv_sock < 0){
+	cli_sock = socket(cli_info->ai_family, cli_info->ai_socktype, cli_info->ai_protocol);
+	if (cli_sock < 0){
 		usage(argv[0], "socket ", strerror(errno));
 	}
 
 	//bind to the port 
-	serv_bind = bind(serv_sock, serv_info->ai_addr, serv_info->ai_addrlen);
-	if (serv_bind != 0){
+	cli_bind = bind(cli_sock, cli_info->ai_addr, cli_info->ai_addrlen);
+	if (cli_bind != 0){
 		usage(argv[0], "bind ", strerror(errno));
 	}
 
@@ -59,21 +61,15 @@ int main(int argc, char* argv[]){
 	struct timeval t;
 	t.tv_sec = TIMEOUT_SEC; 
 	t.tv_usec = 0;
-	int setop = setsockopt(serv_sock, SOL_SOCKET, SO_RCVTIMEO, &t, sizeof(t));
+	int setop = setsockopt(cli_sock, SOL_SOCKET, SO_RCVTIMEO, &t, sizeof(t));
 	if (setop < 0){
 		usage(argv[0], "setsockopt ", strerror(errno));
 	}
 
-	//connect to the socket (ONLY WITH TCP)
-	// conn = connect(serv_sock ,serv_info->ai_addr, serv_info->ai_addrlen); 
-	// if (conn != 0){
-	// 	usage(argv[0], "connect ", gai_strerror(conn));
-	// }
-
 	//send a message to the server
 	struct sockaddr_storage *dest; 
-	int send = sendto(serv_sock, message, mess_len, 0, (struct sockaddr*) &serv_sock, sizeof(serv_sock));
-	if (send != 0){
+	int send = sendto(cli_sock, message, sizeof(message), 0, cli_info->ai_addr, cli_info->ai_addrlen);
+	if (send < 0){
 		usage(argv[0], "send ", strerror(errno));
 	} else {
 		cout << "Pinging " << add << " " << port << " " << message << endl;
@@ -81,16 +77,18 @@ int main(int argc, char* argv[]){
 
 	//receive a message from server  
 	char * mess_in;
-	struct addrinfo *cli_info; //info 
+	struct addrinfo *serv_info; //info 
 	int recv;
-	socklen_t rcv_len;
+	socklen_t rcv_len = sizeof(cli_info);
 	for (int i=0; i<=RETRY; i++){ //retry 3 times 
-		recv = recvfrom(serv_sock, mess_in, mess_len, 0, (struct sockaddr*) &cli_info, &rcv_len);
+		recv = recvfrom(cli_sock, mess_in, mess_len, 0, (struct sockaddr*) &serv_info, &rcv_len);
 		if (!(recv < 0)){
-			cout << "Message received " << mess_in << endl;
-			break;
+			cout << "Message received " << serv_info->addr << " " << mess_in << endl;
+			return 0;
 		}
 	}
 
-	return 0;
+	usage(argv[0], "receive ", "timeout");
+
+	return 1;
 }
