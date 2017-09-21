@@ -1,3 +1,6 @@
+// HW1 Taylor Tu
+// cs356 Thompson 
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <iostream>
@@ -11,24 +14,18 @@
 
 using namespace std;
 
-#define TIMEOUT_SEC 1
-#define RETRY 3
+#define PORT "2222"
+#define MAXBUF 8192 // 8k max size 
 
 void usage(char *progname, string process, const char *message){
 	cerr << "Error: " << progname << " " << process << message << endl;
 }
 int main(int argc, char* argv[]){
 
-	if (argc != 4){
+	if (argc != 1){
 		usage(argv[0], "command line", " Incorrect number of arguments.");
 		return 1;
 	}
-
-	// char* add = argv[1];
-	char* port = argv[2];
-	int mess_len = atoi(argv[3]);
-
-	char * message = new char[mess_len];
 
 	int status, serv_sock, conn, serv_bind;
 	struct addrinfo hints, *serv_info;
@@ -37,9 +34,9 @@ int main(int argc, char* argv[]){
 
 	hints.ai_family = AF_INET; //IPv4
 	hints.ai_socktype = SOCK_DGRAM; //UDP
-	hints.ai_flags = AI_PASSIVE; //set the IP address to my own
+	hints.ai_flags = 0; //set the IP address to my own
 
-	status = getaddrinfo(NULL, port, &hints, &serv_info); //fill serv_info 
+	status = getaddrinfo(NULL, PORT, &hints, &serv_info); //fill serv_info 
 	if (status != 0){
 		usage(argv[0], "getaddrinfo ", gai_strerror(errno));
 		return 1;
@@ -52,16 +49,6 @@ int main(int argc, char* argv[]){
 		return 1;
 	}
 
-	//set socket timeout option to 1 seconds 
-	struct timeval t;
-	t.tv_sec = TIMEOUT_SEC; 
-	t.tv_usec = 0;
-	int setop = setsockopt(serv_sock, SOL_SOCKET, SO_RCVTIMEO, (struct timeval *)&t, sizeof(t));
-	if (setop < 0){
-		usage(argv[0], "setsockopt ", strerror(errno));
-		return 1;
-	}
-
 	//bind to the port 
 	serv_bind = bind(serv_sock, serv_info->ai_addr, serv_info->ai_addrlen);
 	if (serv_bind != 0){
@@ -69,29 +56,21 @@ int main(int argc, char* argv[]){
 		return 1;
 	}
 
-	//connect to the socket (ONLY WITH TCP)
-	// conn = connect(serv_sock ,serv_info->ai_addr, serv_info->ai_addrlen); 
-	// if (conn != 0){
-	// 	usage(argv[0], "connect ", gai_strerror(conn));
-	// }
-
-	//receive a message from server  
+	//receive a message from client  
 	char * mess_in;
-	struct addrinfo *XXXXXXXX; //info 
+	struct addrinfo *cli_info; //info 
 	int recv;
 	socklen_t rcv_len;
-	recv = recvfrom(serv_sock, mess_in, mess_len, 0, (struct sockaddr*) &XXXXXXXX, &rcv_len);
-	if (!(recv < 0)){
-		usage(argv[0], "recvfrom ", strerror(errno));
-		return 1;
-	} else {
-		//send a message to the server
-		struct sockaddr_storage *dest; 
-		int send = sendto(serv_sock, message, mess_len, 0, serv_info->ai_addr, serv_info->ai_addrlen);
-		if (send != 0){
-			usage(argv[0], "sendto ", strerror(errno));
-			return 1;
-		}
+	recv = recvfrom(serv_sock, mess_in, MAXBUF-1, 0, (struct sockaddr*) &cli_info, &rcv_len);
+	if (recv > 0){
+		cout << "received" << endl;
+		// send a message to the client
+		// struct sockaddr_storage *dest; 
+		// int send = sendto(serv_sock, message, mess_len, 0, serv_info->ai_addr, serv_info->ai_addrlen);
+		// if (send != 0){
+		// 	usage(argv[0], "sendto ", strerror(errno));
+		// 	return 1;
+		// }
 	}
 
 

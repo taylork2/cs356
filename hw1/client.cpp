@@ -1,3 +1,6 @@
+// HW1 Taylor Tu
+// cs356 Thompson 
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <iostream>
@@ -48,6 +51,7 @@ int main(int argc, char* argv[]){
 
 	hints.ai_family = AF_INET; //IPv4
 	hints.ai_socktype = SOCK_DGRAM; //UDP
+	hints.ai_flags = 0; //don't need special stuff 
 
 	//store address information in cli_info
 	int status = getaddrinfo(add, port, &hints, &cli_info); //fill cli_info 
@@ -61,11 +65,12 @@ int main(int argc, char* argv[]){
 		usage(argv[0], "socket ", strerror(errno));
 	}
 
-	//bind to the port 
-	cli_bind = bind(cli_sock, cli_info->ai_addr, cli_info->ai_addrlen);
-	if (cli_bind != 0){
-		usage(argv[0], "bind ", strerror(errno));
-	}
+	//no need to bind 
+	// //bind to the port 
+	// cli_bind = bind(cli_sock, cli_info->ai_addr, cli_info->ai_addrlen);
+	// if (cli_bind != 0){
+	// 	usage(argv[0], "bind ", strerror(errno));
+	// }
 
 	//set socket timeout option to 1 seconds 
 	struct timeval t;
@@ -81,7 +86,7 @@ int main(int argc, char* argv[]){
 	if (send < 0){
 		usage(argv[0], "send ", strerror(errno));
 	} else {
-		cout << "Pinging " << add << " " << port << " " << message << endl;
+		cout << "Pinging " << add << " on port " << port << " " << message << endl;
 	}
 
 	//receive a message from server  
