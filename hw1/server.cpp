@@ -57,20 +57,32 @@ int main(int argc, char* argv[]){
 	}
 
 	//receive a message from client  
-	char * mess_in;
-	struct addrinfo *cli_info; //info 
+	char mess_in[MAXBUF];
+	struct addrinfo_storage *cli_info; //info 
 	int recv;
-	socklen_t rcv_len;
+	socklen_t rcv_len = sizeof(cli_info); //must initialize this so the size isn't larger than addr size
+	char cli_addr[INET_ADDRSTRLEN];
+
+	cout << "The server is ready to receive on port: " << PORT << endl;
+	
 	recv = recvfrom(serv_sock, mess_in, MAXBUF-1, 0, (struct sockaddr*) &cli_info, &rcv_len);
-	if (recv > 0){
-		cout << "received" << endl;
+
+	if (recv >= 0){
+
+		getpeername(serv_sock, (struct sockaddr*)cli_info, &rcv_len); 
+		struct sockaddr_in *s = (struct sockaddr_in *)&cli_info;
+		int port = ntohs(s->sin_port);
+	    inet_ntop(AF_INET, &s->sin_addr, cli_addr, sizeof cli_addr);
+			
+		mess_in[MAXBUF]='\0';
+		cout << cli_addr << " sent message: " << mess_in << endl;
+
 		// send a message to the client
-		// struct sockaddr_storage *dest; 
-		// int send = sendto(serv_sock, message, mess_len, 0, serv_info->ai_addr, serv_info->ai_addrlen);
-		// if (send != 0){
-		// 	usage(argv[0], "sendto ", strerror(errno));
-		// 	return 1;
-		// }
+		int send = sendto(serv_sock, mess_in, MAXBUF, 0, (struct sockaddr*) &cli_info, rcv_len);
+		if (send < 0){
+			usage(argv[0], "sendto ", strerror(errno));
+			return 1;
+		}
 	}
 
 

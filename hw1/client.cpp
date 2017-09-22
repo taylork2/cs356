@@ -44,6 +44,13 @@ int main(int argc, char* argv[]){
 	char message[mess_len];
 	memset(&message, 0 , sizeof(message));
 
+	//Make a message consisting of X's 
+	for (int i=0;i<mess_len;i++){
+		message[i] = 'X';
+	}
+	message[mess_len]='\0';
+
+	// Initializing socket variables 
 	int cli_sock, conn, cli_bind;
 	struct addrinfo hints, *cli_info;
 
@@ -86,7 +93,7 @@ int main(int argc, char* argv[]){
 	if (send < 0){
 		usage(argv[0], "send ", strerror(errno));
 	} else {
-		cout << "Pinging " << add << " on port " << port << " " << message << endl;
+		cout << "Pinging " << add << " on port " << port << " Message: " << message << endl;
 	}
 
 	//receive a message from server  
@@ -95,8 +102,11 @@ int main(int argc, char* argv[]){
 	int recv;
 	socklen_t rcv_len = sizeof(cli_info);
 	char serv_addr[INET6_ADDRSTRLEN];
+	
 	for (int i=0; i<=RETRY; i++){ //retry 3 times 
+		
 		recv = recvfrom(cli_sock, mess_in, mess_len, 0, (struct sockaddr*) &serv_info, &rcv_len);
+		
 		if (recv >= 0){
 			getpeername(cli_sock, (struct sockaddr*)serv_info, &rcv_len); 
 			struct sockaddr_in *s = (struct sockaddr_in *)&serv_info;
@@ -105,6 +115,8 @@ int main(int argc, char* argv[]){
 			// serv_addr = get_in_addr((struct sockaddr*) serv_info);
 			cout << "Message received " << serv_addr << endl;
 			return 0;
+		} else {
+			cout << "Ping message " << i+1 << " timed out" << endl;
 		}
 	}
 
