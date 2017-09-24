@@ -57,8 +57,8 @@ int main(int argc, char* argv[]){
 	//Create message 
 	char mess[12]; //will store both seqnum & timestamp in here
 	int mess_len;
-	struct timeval tv;
 
+	//Initialize variables for receiving message
 	char mess_in[12];
 	struct addrinfo_storage *serv_info; //info 
 	int recv;
@@ -67,21 +67,8 @@ int main(int argc, char* argv[]){
 	
 	for (int i=0; i<RETRY; i++){ //retry 10 times 
 
-		//get the sequence num 
-		unsigned int seqnum_nbo = htons(i+1);
-		memcpy(mess, &seqnum_nbo, 4);
-		cout << ntohs(seqnum_nbo) << endl;
-		//get the current time
-		gettimeofday(&tv, NULL); 
-		unsigned long t = 1000000 * tv.tv_sec + tv.tv_usec;
-		unsigned long t_nbo = htobe64(t);
-		memcpy(mess+4, &t_nbo, 8);
-		cout << t << " " << be64toh(t_nbo) << endl;
-
-		// cout << "message" << ntohs(mess[3]) << endl;
-		printf("%x %x %x %x\n", mess[0], mess[1], mess[2], mess[3]);
-		printf("%x %x %x %x %x %x %x %x\n", mess[4], mess[5], mess[6], mess[7], mess[8], mess[9], mess[10], mess[11]);
-
+		createMessage(mess, i);
+		
 		// send a message to the server
 		int send = sendto(cli_sock, mess, sizeof(mess), 0, cli_info->ai_addr, cli_info->ai_addrlen);
 		if (send < 0){
@@ -95,7 +82,7 @@ int main(int argc, char* argv[]){
 		
 		if (recv >= 0){
 			
-			//get the host ip that sent the message 
+			// get the IP address
 			getpeername(cli_sock, (struct sockaddr*)serv_info, &rcv_len); 
 			struct sockaddr_in *s = (struct sockaddr_in *)&serv_info;
     		int port = ntohs(s->sin_port);

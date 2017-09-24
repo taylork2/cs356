@@ -17,7 +17,7 @@
 using namespace std;
 
 #define PORT "2222"
-#define MAXBUF 12 // 8k max size 
+#define MAXBUF 12 // message is 12 bytes  
 
 int main(int argc, char* argv[]){
 
@@ -55,29 +55,44 @@ int main(int argc, char* argv[]){
 		return 1;
 	}
 
-	//receive a message from client  
+	//initialize variables to receive a message from client  
 	char mess_in[MAXBUF];
+	char mess_seq[4]; 
+	char mess_time[8];
 	struct addrinfo_storage *cli_info; //info 
 	int recv;
 	socklen_t rcv_len = sizeof(cli_info); //must initialize this so the size isn't larger than addr size
-	char cli_addr[INET_ADDRSTRLEN];
+	char cli_addr[INET6_ADDRSTRLEN];
 
 	cout << "The server is ready to receive on port: " << PORT << endl;
 	
 	//infinite loop receiving packets 
 	while (true){
-		recv = recvfrom(serv_sock, mess_in, MAXBUF-1, 0, (struct sockaddr*) &cli_info, &rcv_len);
+
+		recv = recvfrom(serv_sock, mess_in, MAXBUF, 0, (struct sockaddr*) &cli_info, &rcv_len);
 
 		if (recv >= 0){
-
+			
+			//get the IP address	
 			getpeername(serv_sock, (struct sockaddr*)cli_info, &rcv_len); 
 			struct sockaddr_in *s = (struct sockaddr_in *)&cli_info;
-			int port = ntohs(s->sin_port);
+    		int port = ntohs(s->sin_port);
 		    inet_ntop(AF_INET, &s->sin_addr, cli_addr, sizeof cli_addr);
-				
-			mess_in[MAXBUF]='\0';
+
+			mess_in[MAXBUF+1]='\0';
+			
 			cout << cli_addr << " sent message: ";
-			printf("%x %x %x %x\n", mess_in[0], mess_in[1], mess_in[2], mess_in[3]);
+
+			memcpy(&mess_seq, &mess_in, 4);
+			memcpy(&mess_time, &mess_in[4], 8);
+
+			// printf("%x %x %x %x\n", mess_seq[0], mess_seq[1], mess_seq[2], mess_in[3]);
+			unsigned int seqnum = * (int *) mess_seq;
+			cout << "Sequence" << ntohs(seqnum) << endl;
+			unsigned long timestamp = * (long *) mess_time;
+			cout << "time" << be64toh(timestamp) << endl;
+			printf("%x %x %x %x %x %x %x %x\n", mess_in[4], mess_in[5], mess_in[6], mess_in[7], mess_in[8], mess_in[9], mess_in[10], mess_in[11]);
+
 
 			// send a message to the client
 			int send = sendto(serv_sock, mess_in, MAXBUF, 0, (struct sockaddr*) &cli_info, rcv_len);
