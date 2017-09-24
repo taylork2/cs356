@@ -13,6 +13,7 @@
 #include <errno.h>
 #include <sys/time.h>
 #include <sstream>
+#include <math.h>
 
 using namespace std;
 
@@ -35,7 +36,8 @@ void setsock_timeo(char *progname, int socket, int seconds){
 
 //convert seqnum and time to binary encoding
 //store in message to be sent over socket API
-void createMessage(char * message, int seqnum){
+//returns the time the message was created as long 
+long createMessage(char * message, int seqnum){
 	//get the sequence num 
 	unsigned int seqnum_nbo = htons(seqnum+1);
 	memcpy(message, &seqnum_nbo, 4);
@@ -47,53 +49,24 @@ void createMessage(char * message, int seqnum){
 	unsigned long t = 1000000 * tv.tv_sec + tv.tv_usec;
 	unsigned long t_nbo = htobe64(t);
 	memcpy(message+4, &t_nbo, 8);
-	printf("%lu\n", t);
+
+	return t;
+	// printf("%lu\n", t);
 	// cout << t << " " << be64toh(t_nbo) << endl;
 
 	// cout << "message" << ntohs(mess[3]) << endl;
 	// printf("%x %x %x %x\n", message[0], message[1], message[2], message[3]);
-	printf("%x %x %x %x %x %x %x %x\n", message[4], message[5], message[6], message[7], message[8], message[9], message[10], message[11]);
+	// printf("%x %x %x %x %x %x %x %x\n", message[4], message[5], message[6], message[7], message[8], message[9], message[10], message[11]);
 }
 
-//converts hex to long integer 
-long hexToLong(char message[]){
-	unsigned long x;
-	stringstream ss;
-	ss << hex << message;
-	ss >> x;
-	return x;
+int getSeqNum(char mess[]){
+	unsigned int seqnum = * (int *) mess;
+	return ntohs(seqnum);
 }
 
-int hexToInt(char message[], int len){
-	unsigned int x;
-	x = (message[0] << 24) | (message[1] << 16) | (message[2] << 8) | message[3];
-	return ntohs(x);
-}
-
-int hexToInt2(char a[], int num){
-	a[3] = (num>>24) & 0xFF;
-	a[2] = (num>>16) & 0xFF;
-	a[1] = (num>>8) & 0xFF;
-	a[0] = num & 0xFF;
-	return num;
-}
-
-long getSeqNum(char message[]){
-	char seq[4];
-	for (int i=0; i<4; i++){
-		seq[i] = message[i];
-	}
-	return hexToLong(seq);
-}
-
-long getTimestamp(char message[]){
-	char timestamp[8];
-	int j = 0;
-	for (int i=4; i<12; i++){
-		timestamp[j] = message[i];
-		j++;
-	}
-	return hexToLong(timestamp);
+long getTimestamp(char mess[]){
+	unsigned long timestamp = * (long *) mess;
+	return be64toh(timestamp);			
 }
 
 //get the host ip that sent the message 
@@ -105,3 +78,15 @@ void getAddr(int socket, struct addrinfo_storage * host_info, socklen_t * len, c
     inet_ntop(AF_INET, &s->sin_addr, *addr, sizeof *addr);			
 }
 
+double calcOTTinSec(long sent_time, long recv_time){
+	return (recv_time - sent_time) * pow(10,-6);
+}
+
+double calcRTTinSec(long sent_time){
+	//get the current time
+	struct timeval tv;
+	gettimeofday(&tv, NULL); 
+	unsigned long t = 1000000 * tv.tv_sec + tv.tv_usec;
+
+	return calcOTTinSec(sent_time, t);
+}

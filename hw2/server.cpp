@@ -64,6 +64,10 @@ int main(int argc, char* argv[]){
 	socklen_t rcv_len = sizeof(cli_info); //must initialize this so the size isn't larger than addr size
 	char cli_addr[INET6_ADDRSTRLEN];
 
+	//initialize variables to send a message to client 
+	char mess_out[MAXBUF];
+	int seqNum;
+
 	cout << "The server is ready to receive on port: " << PORT << endl;
 	
 	//infinite loop receiving packets 
@@ -86,16 +90,14 @@ int main(int argc, char* argv[]){
 			memcpy(&mess_seq, &mess_in, 4);
 			memcpy(&mess_time, &mess_in[4], 8);
 
+			seqNum = getSeqNum(mess_seq);
+			
 			// printf("%x %x %x %x\n", mess_seq[0], mess_seq[1], mess_seq[2], mess_in[3]);
-			unsigned int seqnum = * (int *) mess_seq;
-			cout << "Sequence" << ntohs(seqnum) << endl;
-			unsigned long timestamp = * (long *) mess_time;
-			cout << "time" << be64toh(timestamp) << endl;
-			printf("%x %x %x %x %x %x %x %x\n", mess_in[4], mess_in[5], mess_in[6], mess_in[7], mess_in[8], mess_in[9], mess_in[10], mess_in[11]);
-
+			// printf("%x %x %x %x %x %x %x %x\n", mess_in[4], mess_in[5], mess_in[6], mess_in[7], mess_in[8], mess_in[9], mess_in[10], mess_in[11]);
 
 			// send a message to the client
-			int send = sendto(serv_sock, mess_in, MAXBUF, 0, (struct sockaddr*) &cli_info, rcv_len);
+			createMessage(mess_out, seqNum);
+			int send = sendto(serv_sock, mess_out, MAXBUF, 0, (struct sockaddr*) &cli_info, rcv_len);
 			if (send < 0){
 				usage(argv[0], "sendto ", strerror(errno));
 				return 1;

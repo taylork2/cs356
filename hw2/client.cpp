@@ -12,6 +12,7 @@
 #include <unistd.h>
 #include <errno.h>
 #include <sys/time.h>
+#include <limits.h>
 
 #include "udphelp.h"
 
@@ -60,14 +61,17 @@ int main(int argc, char* argv[]){
 
 	//Initialize variables for receiving message
 	char mess_in[12];
+	char mess_time[8];
 	struct addrinfo_storage *serv_info; //info 
 	int recv;
 	socklen_t rcv_len = sizeof(cli_info);
 	char serv_addr[INET6_ADDRSTRLEN];
+
+	unsigned long sent_t;
 	
 	for (int i=0; i<RETRY; i++){ //retry 10 times 
 
-		createMessage(mess, i);
+		sent_t = createMessage(mess, i); 
 		
 		// send a message to the server
 		int send = sendto(cli_sock, mess, sizeof(mess), 0, cli_info->ai_addr, cli_info->ai_addrlen);
@@ -82,13 +86,20 @@ int main(int argc, char* argv[]){
 		
 		if (recv >= 0){
 			
-			// get the IP address
-			getpeername(cli_sock, (struct sockaddr*)serv_info, &rcv_len); 
-			struct sockaddr_in *s = (struct sockaddr_in *)&serv_info;
-    		int port = ntohs(s->sin_port);
-		    inet_ntop(AF_INET, &s->sin_addr, serv_addr, sizeof serv_addr);
+			//get the time received by server 
+			memcpy(&mess_time, &mess_in[4], 8);
+			long recv_t = getTimestamp(mess_time);
 
-			cout << "Message received " << serv_addr << endl;
+			// // get the IP address
+			// getpeername(cli_sock, (struct sockaddr*)serv_info, &rcv_len); 
+			// struct sockaddr_in *s = (struct sockaddr_in *)&serv_info;
+   //  		int port = ntohs(s->sin_port);
+		 //    inet_ntop(AF_INET, &s->sin_addr, serv_addr, sizeof serv_addr);
+
+			cout << "Ping message number " << i;
+			cout << fixed << " RTT (OTT): " << calcRTTinSec(sent_t);
+			cout << fixed << " (" << calcOTTinSec(sent_t, recv_t) << ") secs" << endl;
+
 		} else {
 			cout << "Ping message " << i+1 << " timed out" << endl;
 		}
