@@ -37,7 +37,7 @@ void setsock_timeo(char *progname, int socket, int seconds){
 //convert seqnum and time to binary encoding
 //store in message to be sent over socket API
 //returns the time the message was created as long 
-long createMessage(char * message, int seqnum){
+double createMessage(char * message, int seqnum){
 	//get the sequence num 
 	unsigned int seqnum_nbo = htons(seqnum+1);
 	memcpy(message, &seqnum_nbo, 4);
@@ -46,8 +46,8 @@ long createMessage(char * message, int seqnum){
 	//get the current time
 	struct timeval tv;
 	gettimeofday(&tv, NULL); 
-	unsigned long t = 1000000 * tv.tv_sec + tv.tv_usec;
-	unsigned long t_nbo = htobe64(t);
+	double t = 1000000 * tv.tv_sec + tv.tv_usec;
+	double t_nbo = htobe64(t);
 	memcpy(message+4, &t_nbo, 8);
 
 	return t;
@@ -64,14 +64,14 @@ int getSeqNum(char mess[]){
 	return ntohs(seqnum);
 }
 
-long getTimestamp(char mess[]){
+double getTimestamp(char mess[]){
 
 	// int64_t timestamp = 0;
 	// for ( int i = 0 ; i < 8; i++ ) {
  //    	timestamp = (timestamp << 8*i) | mess[i];
  //    }
 
-	unsigned long timestamp = *(unsigned long *) mess;
+	double timestamp = *(double *) mess;
 	return be64toh(timestamp);			
 }
 
@@ -84,15 +84,15 @@ void getAddr(int socket, struct addrinfo_storage * host_info, socklen_t * len, c
     inet_ntop(AF_INET, &s->sin_addr, *addr, sizeof *addr);			
 }
 
-double calcOTTinSec(long sent_time, long recv_time){
+double calcOTTinSec(double sent_time, double recv_time){
 	return (recv_time - sent_time) * pow(10,-6);
 }
 
-double calcRTTinSec(long sent_time){
+double calcRTTinSec(double sent_time){
 	//get the current time
 	struct timeval tv;
 	gettimeofday(&tv, NULL); 
-	unsigned long t = 1000000 * tv.tv_sec + tv.tv_usec;
+	double t = 1000000 * tv.tv_sec + tv.tv_usec;
 
 	return calcOTTinSec(sent_time, t);
 }

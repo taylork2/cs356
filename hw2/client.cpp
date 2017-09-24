@@ -68,7 +68,8 @@ int main(int argc, char* argv[]){
 	char serv_addr[INET6_ADDRSTRLEN];
 
 	//packet utility variables 
-	unsigned long sent_t;
+	double sent_t;
+	double recv_t;
 	int packets_lost = 0;
 	double RTT;
 	double OTT;
@@ -99,7 +100,7 @@ int main(int argc, char* argv[]){
 			
 			//get the time received by server 
 			memcpy(&mess_time, &mess_in[4], 8);
-			long recv_t = getTimestamp(mess_time);
+			recv_t = getTimestamp(mess_time);
 			cout << "REC " << recv_t << endl;
 			cout << "SENT " << sent_t << endl;
 
@@ -137,7 +138,7 @@ int main(int argc, char* argv[]){
 
 	//print out ping stats 
 	double packet_loss =  packets_lost / (double)RETRY * 100;
-	cout << "--- " << argv[1] << " ping statistics ---" << endl;
+	cout << "\n--- " << argv[1] << " ping statistics ---" << endl;
 	cout << RETRY << " packets transmitted, " << RETRY - packets_lost << " received, ";
 	cout << packet_loss << "\% packet loss" << endl;
 

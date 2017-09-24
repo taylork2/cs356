@@ -67,7 +67,7 @@ int main(int argc, char* argv[]){
 	//initialize variables to send a message to client 
 	char mess_out[MAXBUF];
 	int seqNum;
-	long recv_t;
+	double recv_t;
 
 	int loss;
 
