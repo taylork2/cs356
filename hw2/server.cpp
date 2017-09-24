@@ -12,14 +12,13 @@
 #include <unistd.h>
 #include <errno.h>
 
+#include "udphelp.h"
+
 using namespace std;
 
 #define PORT "2222"
 #define MAXBUF 12 // 8k max size 
 
-void usage(char *progname, string process, const char *message){
-	cerr << "Error: " << progname << " " << process << message << endl;
-}
 int main(int argc, char* argv[]){
 
 	if (argc != 1){
@@ -77,7 +76,8 @@ int main(int argc, char* argv[]){
 		    inet_ntop(AF_INET, &s->sin_addr, cli_addr, sizeof cli_addr);
 				
 			mess_in[MAXBUF]='\0';
-			cout << cli_addr << " sent message: " << mess_in << endl;
+			cout << cli_addr << " sent message: ";
+			printf("%x %x %x %x\n", mess_in[0], mess_in[1], mess_in[2], mess_in[3]);
 
 			// send a message to the client
 			int send = sendto(serv_sock, mess_in, MAXBUF, 0, (struct sockaddr*) &cli_info, rcv_len);

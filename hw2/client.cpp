@@ -13,16 +13,12 @@
 #include <errno.h>
 #include <sys/time.h>
 
+#include "udphelp.h"
+
 using namespace std;
 
 #define TIMEOUT_SEC 1
 #define RETRY 10
-
-
-//error printing
-void usage(char *progname, string process, const char *message){
-	cerr << "Error: " << progname << " " << process << message << endl;
-}
 
 int main(int argc, char* argv[]){
 
@@ -56,15 +52,7 @@ int main(int argc, char* argv[]){
 		usage(argv[0], "socket ", strerror(errno));
 	}
 
-	//set socket timeout option to 1 seconds 
-	struct timeval t;
-	t.tv_sec = TIMEOUT_SEC; 
-	t.tv_usec = 0;
-	int setop = setsockopt(cli_sock, SOL_SOCKET, SO_RCVTIMEO, &t, sizeof(t));
-	if (setop < 0){
-		usage(argv[0], "setsockopt ", strerror(errno));
-	}
-
+	setsock_timeo(argv[0], cli_sock, TIMEOUT_SEC);
 
 	//Create message 
 	char mess[12]; //will store both seqnum & timestamp in here
@@ -92,7 +80,7 @@ int main(int argc, char* argv[]){
 
 		// cout << "message" << ntohs(mess[3]) << endl;
 		printf("%x %x %x %x\n", mess[0], mess[1], mess[2], mess[3]);
-
+		printf("%x %x %x %x %x %x %x %x\n", mess[4], mess[5], mess[6], mess[7], mess[8], mess[9], mess[10], mess[11]);
 
 		// send a message to the server
 		int send = sendto(cli_sock, mess, sizeof(mess), 0, cli_info->ai_addr, cli_info->ai_addrlen);
