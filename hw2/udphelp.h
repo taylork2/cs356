@@ -65,7 +65,13 @@ int getSeqNum(char mess[]){
 }
 
 long getTimestamp(char mess[]){
-	unsigned long timestamp = * (long *) mess;
+
+	// int64_t timestamp = 0;
+	// for ( int i = 0 ; i < 8; i++ ) {
+ //    	timestamp = (timestamp << 8*i) | mess[i];
+ //    }
+
+	unsigned long timestamp = *(unsigned long *) mess;
 	return be64toh(timestamp);			
 }
 
@@ -90,3 +96,4 @@ double calcRTTinSec(long sent_time){
 
 	return calcOTTinSec(sent_time, t);
 }
+

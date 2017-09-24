@@ -67,7 +67,18 @@ int main(int argc, char* argv[]){
 	socklen_t rcv_len = sizeof(cli_info);
 	char serv_addr[INET6_ADDRSTRLEN];
 
+	//packet utility variables 
 	unsigned long sent_t;
+	int packets_lost = 0;
+	double RTT;
+	double OTT;
+	double maxOTT = 0.0;
+	double minOTT = 100000000000.0;
+	double totOTT = 0.0;
+	double maxRTT = 	0.0;
+	double minRTT = 100000000000.0;
+	double totRTT = 0.0;
+
 	
 	for (int i=0; i<RETRY; i++){ //retry 10 times 
 
@@ -89,21 +100,53 @@ int main(int argc, char* argv[]){
 			//get the time received by server 
 			memcpy(&mess_time, &mess_in[4], 8);
 			long recv_t = getTimestamp(mess_time);
+			cout << "REC " << recv_t << endl;
+			cout << "SENT " << sent_t << endl;
 
-			// // get the IP address
-			// getpeername(cli_sock, (struct sockaddr*)serv_info, &rcv_len); 
-			// struct sockaddr_in *s = (struct sockaddr_in *)&serv_info;
-   //  		int port = ntohs(s->sin_port);
-		 //    inet_ntop(AF_INET, &s->sin_addr, serv_addr, sizeof serv_addr);
+			OTT = calcOTTinSec(sent_t, recv_t);
+			RTT = calcRTTinSec(sent_t);
 
-			cout << "Ping message number " << i;
-			cout << fixed << " RTT (OTT): " << calcRTTinSec(sent_t);
-			cout << fixed << " (" << calcOTTinSec(sent_t, recv_t) << ") secs" << endl;
+			if (OTT > maxOTT){
+				maxOTT = OTT;
+			} 
+
+			if (OTT < minOTT){
+				minOTT = OTT;
+			}
+
+			if (RTT > maxRTT){
+				maxRTT = RTT;
+			} 
+			if (RTT < minRTT){
+				minRTT = RTT;
+			}
+
+			totOTT += OTT;
+			totRTT += RTT;
+
+			// output to trace 
+			cout << "Ping message number " << i+1;
+			cout << fixed << " RTT (OTT): " << RTT;
+			cout << fixed << " (" << OTT << ") secs" << endl;
 
 		} else {
+			packets_lost++;
 			cout << "Ping message " << i+1 << " timed out" << endl;
 		}
 	}
 
-	return 1;
+	//print out ping stats 
+	double packet_loss =  packets_lost / (double)RETRY * 100;
+	cout << "--- " << argv[1] << " ping statistics ---" << endl;
+	cout << RETRY << " packets transmitted, " << RETRY - packets_lost << " received, ";
+	cout << packet_loss << "\% packet loss" << endl;
+
+	cout << "rtt min/avg/max = " << minRTT << "/" << totRTT/(double)(RETRY-packets_lost);
+	cout << "/" << maxRTT << endl;
+
+	cout << "ott min/avg/max = " << minOTT << "/" << totOTT/(double)(RETRY-packets_lost);
+	cout << "/" << maxOTT << endl;
+
+
+	return 0;
 }
