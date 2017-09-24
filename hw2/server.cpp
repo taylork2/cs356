@@ -15,7 +15,7 @@
 using namespace std;
 
 #define PORT "2222"
-#define MAXBUF 8192 // 8k max size 
+#define MAXBUF 12 // 8k max size 
 
 void usage(char *progname, string process, const char *message){
 	cerr << "Error: " << progname << " " << process << message << endl;
@@ -65,24 +65,28 @@ int main(int argc, char* argv[]){
 
 	cout << "The server is ready to receive on port: " << PORT << endl;
 	
-	recv = recvfrom(serv_sock, mess_in, MAXBUF-1, 0, (struct sockaddr*) &cli_info, &rcv_len);
+	//infinite loop receiving packets 
+	while (true){
+		recv = recvfrom(serv_sock, mess_in, MAXBUF-1, 0, (struct sockaddr*) &cli_info, &rcv_len);
 
-	if (recv >= 0){
+		if (recv >= 0){
 
-		getpeername(serv_sock, (struct sockaddr*)cli_info, &rcv_len); 
-		struct sockaddr_in *s = (struct sockaddr_in *)&cli_info;
-		int port = ntohs(s->sin_port);
-	    inet_ntop(AF_INET, &s->sin_addr, cli_addr, sizeof cli_addr);
-			
-		mess_in[MAXBUF]='\0';
-		cout << cli_addr << " sent message: " << mess_in << endl;
+			getpeername(serv_sock, (struct sockaddr*)cli_info, &rcv_len); 
+			struct sockaddr_in *s = (struct sockaddr_in *)&cli_info;
+			int port = ntohs(s->sin_port);
+		    inet_ntop(AF_INET, &s->sin_addr, cli_addr, sizeof cli_addr);
+				
+			mess_in[MAXBUF]='\0';
+			cout << cli_addr << " sent message: " << mess_in << endl;
 
-		// send a message to the client
-		int send = sendto(serv_sock, mess_in, MAXBUF, 0, (struct sockaddr*) &cli_info, rcv_len);
-		if (send < 0){
-			usage(argv[0], "sendto ", strerror(errno));
-			return 1;
+			// send a message to the client
+			int send = sendto(serv_sock, mess_in, MAXBUF, 0, (struct sockaddr*) &cli_info, rcv_len);
+			if (send < 0){
+				usage(argv[0], "sendto ", strerror(errno));
+				return 1;
+			}
 		}
+		
 	}
 
 

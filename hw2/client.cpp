@@ -11,11 +11,12 @@
 #include <netdb.h>
 #include <unistd.h>
 #include <errno.h>
+#include <sys/time.h>
 
 using namespace std;
 
 #define TIMEOUT_SEC 1
-#define RETRY 3
+#define RETRY 10
 
 
 //error printing
@@ -25,23 +26,13 @@ void usage(char *progname, string process, const char *message){
 
 int main(int argc, char* argv[]){
 
-	if (argc != 4){
+	if (argc != 3){
 		usage(argv[0], "command line", " Incorrect number of arguments.");
 		return 1;
 	}
 
 	char* add = argv[1];
 	char* port = argv[2];
-	int mess_len = atoi(argv[3]);
-
-	char message[mess_len];
-	memset(&message, 0 , sizeof(message));
-
-	//Make a message consisting of X's 
-	for (int i=0;i<mess_len;i++){
-		message[i] = 'X';
-	}
-	message[mess_len]='\0';
 
 	// Initializing socket variables 
 	int cli_sock, conn, cli_bind;
@@ -65,8 +56,6 @@ int main(int argc, char* argv[]){
 		usage(argv[0], "socket ", strerror(errno));
 	}
 
-	//no need to bind 
-
 	//set socket timeout option to 1 seconds 
 	struct timeval t;
 	t.tv_sec = TIMEOUT_SEC; 
@@ -76,23 +65,44 @@ int main(int argc, char* argv[]){
 		usage(argv[0], "setsockopt ", strerror(errno));
 	}
 
-	// send a message to the server
-	int send = sendto(cli_sock, message, sizeof(message), 0, cli_info->ai_addr, cli_info->ai_addrlen);
-	if (send < 0){
-		usage(argv[0], "send ", strerror(errno));
-	} else {
-		cout << "Pinging " << add << " on port " << port << " sending message: " << message << endl;
-	}
 
-	//receive a message from server  
-	char * mess_in;
+	//Create message 
+	char mess[12]; //will store both seqnum & timestamp in here
+	int mess_len;
+	struct timeval tv;
+
+	char mess_in[12];
 	struct addrinfo_storage *serv_info; //info 
 	int recv;
 	socklen_t rcv_len = sizeof(cli_info);
 	char serv_addr[INET6_ADDRSTRLEN];
 	
-	for (int i=0; i<=RETRY; i++){ //retry 3 times 
-		
+	for (int i=0; i<RETRY; i++){ //retry 10 times 
+
+		//get the sequence num 
+		unsigned int seqnum_nbo = htons(i+1);
+		memcpy(mess, &seqnum_nbo, 4);
+		cout << ntohs(seqnum_nbo) << endl;
+		//get the current time
+		gettimeofday(&tv, NULL); 
+		unsigned long t = 1000000 * tv.tv_sec + tv.tv_usec;
+		unsigned long t_nbo = htobe64(t);
+		memcpy(mess+4, &t_nbo, 8);
+		cout << t << " " << be64toh(t_nbo) << endl;
+
+		// cout << "message" << ntohs(mess[3]) << endl;
+		printf("%x %x %x %x\n", mess[0], mess[1], mess[2], mess[3]);
+
+
+		// send a message to the server
+		int send = sendto(cli_sock, mess, sizeof(mess), 0, cli_info->ai_addr, cli_info->ai_addrlen);
+		if (send < 0){
+			usage(argv[0], "send ", strerror(errno));
+		} else if (i == 0 ) {
+			cout << "Pinging " << add << ", " << port << ":" << endl;
+		}
+
+		//receive a message from server  
 		recv = recvfrom(cli_sock, mess_in, mess_len, 0, (struct sockaddr*) &serv_info, &rcv_len);
 		
 		if (recv >= 0){
@@ -104,13 +114,10 @@ int main(int argc, char* argv[]){
 		    inet_ntop(AF_INET, &s->sin_addr, serv_addr, sizeof serv_addr);
 
 			cout << "Message received " << serv_addr << endl;
-			return 0;
 		} else {
 			cout << "Ping message " << i+1 << " timed out" << endl;
 		}
 	}
-
-	usage(argv[0], "receive ", "timeout");
 
 	return 1;
 }
