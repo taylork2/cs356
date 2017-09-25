@@ -67,7 +67,7 @@ int main(int argc, char* argv[]){
 	//initialize variables to send a message to client 
 	char mess_out[MAXBUF];
 	int seqNum;
-	double recv_t;
+	long recv_t;
 
 	int loss;
 
@@ -88,13 +88,13 @@ int main(int argc, char* argv[]){
 			memcpy(&mess_seq, &mess_in, 4);
 			seqNum = getSeqNum(mess_seq);
 
-			if (loss < 4){
+			if (loss < 4){ //simulate lost packet 
 				cout << "Message with sequence number " << seqNum << " dropped." << endl;
 			} else {
 				//output trace information
 				recv_t = createMessage(mess_out, seqNum);
 				cout << "Responding to ping request with sequence number " << seqNum;
-				cout << " received at " <<  recv_t << endl;
+				cout << fixed << " received at " <<  recv_t << endl;
 
 				// send a message to the client
 				int send = sendto(serv_sock, mess_out, MAXBUF, 0, (struct sockaddr*) &cli_info, rcv_len);

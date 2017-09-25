@@ -13,6 +13,7 @@
 #include <errno.h>
 #include <sys/time.h>
 #include <limits.h>
+#include <algorithm>
 
 #include "udphelp.h"
 
@@ -57,10 +58,10 @@ int main(int argc, char* argv[]){
 
 	//Create message 
 	char mess[12]; //will store both seqnum & timestamp in here
-	int mess_len;
 
 	//Initialize variables for receiving message
 	char mess_in[12];
+	int mess_len = sizeof(mess); //tell how large of message to receive 
 	char mess_time[8];
 	struct addrinfo_storage *serv_info; //info 
 	int recv;
@@ -68,15 +69,17 @@ int main(int argc, char* argv[]){
 	char serv_addr[INET6_ADDRSTRLEN];
 
 	//packet utility variables 
-	double sent_t;
-	double recv_t;
+	long sent_t;
+	long recv_t;
 	int packets_lost = 0;
+	
 	double RTT;
 	double OTT;
+
 	double maxOTT = 0.0;
 	double minOTT = 100000000000.0;
 	double totOTT = 0.0;
-	double maxRTT = 	0.0;
+	double maxRTT = 0.0;
 	double minRTT = 100000000000.0;
 	double totRTT = 0.0;
 
@@ -99,29 +102,19 @@ int main(int argc, char* argv[]){
 		if (recv >= 0){
 			
 			//get the time received by server 
-			memcpy(&mess_time, &mess_in[4], 8);
-			recv_t = getTimestamp(mess_time);
-			cout << "REC " << recv_t << endl;
-			cout << "SENT " << sent_t << endl;
+			memcpy(&recv_t, &mess_in[4], 8);
+			recv_t = getTimestamp(recv_t);
 
 			OTT = calcOTTinSec(sent_t, recv_t);
 			RTT = calcRTTinSec(sent_t);
 
-			if (OTT > maxOTT){
-				maxOTT = OTT;
-			} 
+			//get the min and max for OTT and RTT
+			maxOTT = max(OTT, maxOTT);
+			minOTT = min(OTT, minOTT);
+			maxRTT = max(RTT, maxRTT);
+			minRTT = min(RTT, minRTT);
 
-			if (OTT < minOTT){
-				minOTT = OTT;
-			}
-
-			if (RTT > maxRTT){
-				maxRTT = RTT;
-			} 
-			if (RTT < minRTT){
-				minRTT = RTT;
-			}
-
+			//total will be used to calculate avg
 			totOTT += OTT;
 			totRTT += RTT;
 
@@ -134,6 +127,11 @@ int main(int argc, char* argv[]){
 			packets_lost++;
 			cout << "Ping message " << i+1 << " timed out" << endl;
 		}
+
+		memset(&mess, 0, sizeof mess); //empty struct 
+		memset(&mess_in, 0, sizeof mess_in); //empty struct 
+		memset(&recv_t, 0, sizeof recv_t); //empty struct 
+
 	}
 
 	//print out ping stats 

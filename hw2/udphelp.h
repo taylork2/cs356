@@ -37,26 +37,19 @@ void setsock_timeo(char *progname, int socket, int seconds){
 //convert seqnum and time to binary encoding
 //store in message to be sent over socket API
 //returns the time the message was created as long 
-double createMessage(char * message, int seqnum){
+long createMessage(char * message, int seqnum){
 	//get the sequence num 
 	unsigned int seqnum_nbo = htons(seqnum+1);
 	memcpy(message, &seqnum_nbo, 4);
-	// cout << ntohs(seqnum_nbo) << endl;
 
 	//get the current time
 	struct timeval tv;
 	gettimeofday(&tv, NULL); 
-	double t = 1000000 * tv.tv_sec + tv.tv_usec;
-	double t_nbo = htobe64(t);
+	long t = 1000000 * tv.tv_sec + tv.tv_usec;
+	long t_nbo = htobe64(t);
 	memcpy(message+4, &t_nbo, 8);
-
+	
 	return t;
-	// printf("%lu\n", t);
-	// cout << t << " " << be64toh(t_nbo) << endl;
-
-	// cout << "message" << ntohs(mess[3]) << endl;
-	// printf("%x %x %x %x\n", message[0], message[1], message[2], message[3]);
-	// printf("%x %x %x %x %x %x %x %x\n", message[4], message[5], message[6], message[7], message[8], message[9], message[10], message[11]);
 }
 
 int getSeqNum(char mess[]){
@@ -64,14 +57,8 @@ int getSeqNum(char mess[]){
 	return ntohs(seqnum);
 }
 
-double getTimestamp(char mess[]){
-
-	// int64_t timestamp = 0;
-	// for ( int i = 0 ; i < 8; i++ ) {
- //    	timestamp = (timestamp << 8*i) | mess[i];
- //    }
-
-	double timestamp = *(double *) mess;
+//will convert timestamp to host order 
+double getTimestamp(long timestamp){
 	return be64toh(timestamp);			
 }
 
@@ -84,15 +71,16 @@ void getAddr(int socket, struct addrinfo_storage * host_info, socklen_t * len, c
     inet_ntop(AF_INET, &s->sin_addr, *addr, sizeof *addr);			
 }
 
-double calcOTTinSec(double sent_time, double recv_time){
-	return (recv_time - sent_time) * pow(10,-6);
+double calcOTTinSec(long sent_time, long recv_time){
+	return (double)(recv_time - sent_time) * pow(10,-6);
+
 }
 
-double calcRTTinSec(double sent_time){
+double calcRTTinSec(long sent_time){
 	//get the current time
 	struct timeval tv;
 	gettimeofday(&tv, NULL); 
-	double t = 1000000 * tv.tv_sec + tv.tv_usec;
+	long t = 1000000 * tv.tv_sec + tv.tv_usec;
 
 	return calcOTTinSec(sent_time, t);
 }
