@@ -32,6 +32,7 @@ int main(int argc, char* argv[]){
 	char* add = argv[1];
 	char* port = argv[2];
 
+
 	// Initializing socket variables 
 	int cli_sock, conn, cli_bind;
 	struct addrinfo hints, *cli_info;
@@ -135,15 +136,25 @@ int main(int argc, char* argv[]){
 	}
 
 	//print out ping stats 
+	double avgRTT = 0;
+	double avgOTT = 0;
+	if (RETRY - packets_lost != 0){
+		avgRTT = totRTT/(double)(RETRY-packets_lost);
+		avgOTT = totOTT/(double)(RETRY-packets_lost);
+	} else {
+		minRTT = 0;
+		minOTT = 0;
+	}
+
 	double packet_loss =  packets_lost / (double)RETRY * 100;
 	cout << "\n--- " << argv[1] << " ping statistics ---" << endl;
 	cout << RETRY << " packets transmitted, " << RETRY - packets_lost << " received, ";
 	cout << packet_loss << "\% packet loss" << endl;
 
-	cout << "rtt min/avg/max = " << minRTT << "/" << totRTT/(double)(RETRY-packets_lost);
+	cout << "rtt min/avg/max = " << minRTT << "/" << avgRTT;
 	cout << "/" << maxRTT << endl;
-
-	cout << "ott min/avg/max = " << minOTT << "/" << totOTT/(double)(RETRY-packets_lost);
+	
+	cout << "ott min/avg/max = " << minOTT << "/" << avgOTT;
 	cout << "/" << maxOTT << endl;
 
 
