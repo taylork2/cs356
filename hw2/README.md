@@ -7,7 +7,7 @@ Usage:
 
 g++ -o main client.cpp && ./main [IP address of server] [IP port of server]
 
-g++ -o main client.cpp && ./main 
+g++ -o main server.cpp && ./main 
 
 Example commandline:
 

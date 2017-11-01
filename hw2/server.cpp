@@ -33,7 +33,7 @@ int main(int argc, char* argv[]){
 
 	hints.ai_family = AF_INET; //IPv4
 	hints.ai_socktype = SOCK_DGRAM; //UDP
-	hints.ai_flags = 0; //set the IP address to my own
+	hints.ai_flags = AI_PASSIVE; //set the IP address to my own
 
 	status = getaddrinfo(NULL, PORT, &hints, &serv_info); //fill serv_info 
 	if (status != 0){
