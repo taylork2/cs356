@@ -4,7 +4,6 @@ Version: 2.7
 Commandline: python router.py [router#(1-4)]
 Commandline example: python router.py 2
 
-MUST run router 4 first 
 
 Sources: 
 https://pymotw.com/2/socket/udp.html

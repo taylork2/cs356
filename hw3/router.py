@@ -190,6 +190,11 @@ def main():
 			except socket.error as msg:
 				print "Caught recvfrom exception: %s " %msg	
 				breakLoop = True
+				ft_updated, dists, FH = bellmanFord(dists, R, FH)
+				if ft_updated: 
+					breakLoop = False
+					printFT(R, FH)
+
 
 			if breakLoop == True:
 				break
