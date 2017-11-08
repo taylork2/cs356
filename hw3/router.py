@@ -4,7 +4,7 @@ import ctypes
 import struct 
 
 
-INF = 100000; #infinity 
+INF = 10000; #infinity 
 
 N = 4 #number of routers 
 HOST = 'localhost'
@@ -15,6 +15,10 @@ DISTANCES = [[0,1,4,8],
 	 		 [1,0,2,INF],
 	 		 [4,2,0,1],
 	 		 [8,INF,1,0]]
+NEIGHBOR = [ [False, True, True, True ],
+			 [True, False, True, False],
+			 [True, True, False, True ],
+			 [True, False, True, False] ]
 
 
 
@@ -62,38 +66,61 @@ def updateDists(dists, sent_dists, sent_router):
 
 	return dists, updated
 
-def bellmanFord(dists, router):
-	for j in range(0, len(dists)):
-		if j==router-1:
-			continue 
+# Bellman Ford ALgorithm 
+def bellmanFord(dists, router, firsthop_table):
+	updated = False
 
-		d, fh = D(dists,router-1,j)
-		dists[router-1][j] = d
+	#Relax the distances for all the vertices 
+	for v in range(0, len(dists)):
+		for i in range(0, len(dists)):
+			for j in range(0, len(dists)):
+				if not NEIGHBOR[i][j]:
+					continue 
 
-def D(dists, origin, dest):
-	min_d = INF
-	fh = -1
-	for j in range(0, len(dists)):
-		d = dists[origin][j] + D(dists, dest, i)[0]
-		if d < min_d:
-			min_d = d
-			fh = j
+				if dists[router-1][j] > dists[router-1][i] + dists[i][j]:
+					dists[router-1][j] = dists[router-1][i] + dists[i][j]
+					firsthop_table[j] = firsthop_table[i]
+					print "Bellman Ford Update"
+					printTable(dists) 
+					updated = True
 
-	return min_d, fh
-
+	return updated, dists, firsthop_table
 
 def printTable(dists):
-	print "\t\tDest."
-	print "Src.\tR1\tR2\tR3\tR4"
+	print "==============================================="
+	print "\t|\t  Dest."
+	print " Src.\t| R1\t| R2\t| R3\t| R4"
+	print "--------|-------|-------|-------|-------"
 	row = 1
 	for l in dists:
 		sys.stdout.write("R"+str(row))
 		sys.stdout.flush()
 		row=row+1
 		for d in l:
-			sys.stdout.write("\t"+str(d)) 
+			sys.stdout.write("\t| "+str(d)) 
 			sys.stdout.flush()
 		print
+
+	print "==============================================="
+
+
+def printFT(router, ft):
+	print "==============================================="
+	print "Router %s Forwarding Table:" %router
+	print "Dest.\t| Next Hop"
+	print "--------|---------"
+
+	r = 1
+	for i in ft:
+		sys.stdout.write("R"+str(r))
+		sys.stdout.flush()
+		r = r+1
+		sys.stdout.write("\t|"+str(i)) 
+		sys.stdout.flush()
+		print 
+
+	print "==============================================="
+
 
 
 # Check the commandline arguments
@@ -108,6 +135,9 @@ def main():
 	#get the port number 
 	R=int(sys.argv[1])
 	PORT = PORTS[R-1]
+
+	FH = [ 1, 2, 3, 4 ] #first hop table 
+	FH[R-1] = "local"
 	
 	dists = createDistanceVector(R)
 
@@ -126,21 +156,21 @@ def main():
 		print "Caught socket binding exception : %s" %msg
 		return 1
 
-	#set socket timeout of 1 second  
-	sock.settimeout(1)
+	# set socket timeout of 1 second  
+	sock.settimeout(20)
 
 	print >> sys.stderr, 'starting up on %s port %s' %serv_addr
 
 	seq_num = 0
 
 	#Send distance vector to other routers 
-	while True and seq_num<10: 
+	while True and seq_num<100: 
 
 		seq_num = seq_num + 1
 
 		for i in range(1, N+1):
-			# Skip itself and router's that are not neighbors 
-			if i==R or dists[R-1][i-1] >= INF:
+			# Skip router's that are not neighbors (including itself)
+			if not NEIGHBOR[R-1][i-1]:
 				continue
 
 			message = createMessage(seq_num, R, dists)
@@ -148,28 +178,43 @@ def main():
 			r_addr = (HOST, PORTS[i-1])
 			try:
 				sent = sock.sendto(message, r_addr)
-				print "Sending distance vector to router %s" %i
+				print "Sending distance vector to router {} > {}".format(i, dists[R-1])
 			except socket.error as msg: 
 				print "Caught sendto exception: %s " %msg
 
-		for i in range(1, N+1):
+
+		breakLoop = False
+		while True:
 			try:
-				data, addr = sock.recvfrom(24)
+				data, addr = sock.recvfrom(24) #24 bytes 
 			except socket.error as msg:
 				print "Caught recvfrom exception: %s " %msg	
-				continue
+				breakLoop = True
 
-		sent_seq_num, sent_router, sent_dists = convertMsg(data)
-		print "Received distance vector from router %s" %sent_router
-		dists, updated = updateDists(dists, sent_dists, sent_router)
+			if breakLoop == True:
+				break
 
-		if updated:
-			printTable(dists) 
+			sent_seq_num, sent_router, sent_dists = convertMsg(data)
+			print "Received distance vector from router {} > {}".format(sent_router, sent_dists)
+			dists, updated = updateDists(dists, sent_dists, sent_router)
 
-			
+			if updated:
+				printTable(dists) 
+				break
+
+			ft_updated, dists, FH = bellmanFord(dists, R, FH)
+			if ft_updated: 
+				printFT(R, FH)
+				break
+
+		# If the socket does not recv message, socket will time out and break
+		if breakLoop == True:
+			break		
 	
 	print "Closing socket" 
-	sock.close()	
+	sock.close()
+
+	printFT(R, FH)	
 
 
 main()
